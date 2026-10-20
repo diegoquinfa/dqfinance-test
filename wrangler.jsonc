@@ -1,0 +1,37 @@
+{
+  "$schema": "node_modules/wrangler/config-schema.json",
+  // The one Worker: apps/web serves the app and mounts apps/api on /api/*, /.well-known/* and /mcp.
+  // At the repo root so the Deploy to Cloudflare button finds it. No routes: a custom domain is
+  // added in the dashboard, and wrangler deploy leaves it alone only while this file has none.
+  "name": "dqfinance-test",
+  "main": "apps/web/src/server.ts",
+  "compatibility_date": "2026-10-18",
+  // Better Auth relies on AsyncLocalStorage and node:crypto.
+  "compatibility_flags": ["nodejs_compat"],
+  "d1_databases": [
+    {
+      "binding": "DB",
+      "database_name": "dqfinance-db",
+      // Placeholder: the Deploy button provisions the database and writes its id here. By hand:
+      // `wrangler d1 create dqfinance`.
+      "database_id": "190ab31b-5813-429e-8bee-891b44208802",
+      "migrations_dir": "apps/api/migrations"
+    }
+  ],
+  // Documents per source. Local dev uses miniflare's local R2.
+  "r2_buckets": [
+    {
+      "binding": "DOCUMENTS",
+      "bucket_name": "dqfinance-documents","preview_bucket_name": "dqfinance-documents"
+    }
+  ],
+  "observability": {
+    "enabled": true
+  },
+  // Declared so `cf-typegen` is deterministic without a local .dev.vars. VAPID keys stay optional
+  // (see apps/api/src/app-env.ts): absent means push notifications are off.
+  "secrets": {
+    "required": ["BETTER_AUTH_SECRET"]
+  }
+  // Secrets (set with `wrangler secret put`, or in .dev.vars locally): BETTER_AUTH_SECRET
+}

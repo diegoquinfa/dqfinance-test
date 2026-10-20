@@ -1,0 +1,33 @@
+{
+  "name": "@dqfinance/api",
+  "private": true,
+  "type": "module",
+  "exports": {
+    ".": "./src/index.ts",
+    "./app-type": "./src/index.ts"
+  },
+  "scripts": {
+    "check-types": "tsc --noEmit",
+    "test": "node --test \"src/**/*.test.ts\"",
+    "cf-typegen": "wrangler types --env-interface CloudflareBindings -c ../../wrangler.jsonc worker-configuration.d.ts",
+    "auth:schema": "pnpm dlx auth@latest generate --config src/features/auth/auth.cli.ts --output src/features/auth/auth.schema.ts --yes",
+    "db:generate": "drizzle-kit generate"
+  },
+  "dependencies": {
+    "@better-auth/mcp": "^1.7.10",
+    "@block65/webcrypto-web-push": "^2.0.0",
+    "@dqfinance/i18n": "workspace:*",
+    "@tanstack/ai": "0.69.0",
+    "@tanstack/ai-mcp": "^0.9.0",
+    "better-auth": "^1.7.10",
+    "drizzle-orm": "^0.45.4",
+    "hono": "^4.13.13",
+    "zod": "^4.6.7"
+  },
+  "devDependencies": {
+    "@types/node": "^22.20.5",
+    "drizzle-kit": "^0.31.11",
+    "typescript": "7.0.2",
+    "wrangler": "^4.151.1"
+  }
+}

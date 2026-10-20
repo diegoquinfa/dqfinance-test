@@ -1,0 +1,36 @@
+import { Hono } from 'hono'
+import type { AppEnv } from '../../app-env'
+import { jsonBody, queryParams } from '../../shared/http'
+import { requireSession } from '../auth/require-session'
+import { pushConfigFrom } from '../push/push-config'
+import { sendPush } from '../push/send-push'
+import { createTransaction, createTransactionInput } from './create-transaction'
+import { deleteTransaction } from './delete-transaction'
+import { importTransactions, importTransactionsInput } from './import-transactions'
+import { listTransactions, listTransactionsInput } from './list-transactions'
+import { summarizeTransactions, summarizeTransactionsInput } from './summarize-transactions'
+import { updateTransaction, updateTransactionInput } from './update-transaction'
+
+export const transactionsRoutes = new Hono<AppEnv>()
+  .use(requireSession)
+  .get('/', queryParams(listTransactionsInput), async (c) =>
+    c.json(await listTransactions(c.var.db, c.var.userId, c.var.locale, c.req.valid('query'))),
+  )
+  .get('/summary', queryParams(summarizeTransactionsInput), async (c) =>
+    c.json(await summarizeTransactions(c.var.db, c.var.userId, c.req.valid('query'))),
+  )
+  .post('/', jsonBody(createTransactionInput), async (c) => {
+    const created = await createTransaction(c.var.db, c.var.userId, c.req.valid('json'))
+    await sendPush(c.var.db, c.var.userId, c.var.locale, pushConfigFrom(c.env), created.type)
+    return c.json(created, 201)
+  })
+  .post('/import', jsonBody(importTransactionsInput), async (c) => {
+    const imported = await importTransactions(c.var.db, c.var.userId, c.var.locale, c.req.valid('json'))
+    // A preview changes nothing, so only a real import is announced.
+    if (imported.created > 0) await sendPush(c.var.db, c.var.userId, c.var.locale, pushConfigFrom(c.env), 'import')
+    return c.json(imported)
+  })
+  .patch('/:id', jsonBody(updateTransactionInput), async (c) =>
+    c.json(await updateTransaction(c.var.db, c.var.userId, c.req.param('id'), c.req.valid('json'))),
+  )
+  .delete('/:id', async (c) => c.json(await deleteTransaction(c.var.db, c.var.userId, c.req.param('id'))))
